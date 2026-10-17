@@ -1,0 +1,26 @@
+{
+  "latitude": 42.13,
+  "longitude": 77.55,
+  "size_km": 40,
+  "date": "2025-09-13",
+  "items": [
+    "S2B_44TKM_20250913_0_L2A",
+    "S2B_43TGG_20250913_0_L2A",
+    "S2B_43TFG_20250913_0_L2A"
+  ],
+  "min_height": 1606,
+  "max_height": 4759,
+  "far": {
+    "size_km": 120,
+    "date": "2025-09-13",
+    "items": [
+      "S2B_44TKM_20250913_0_L2A",
+      "S2B_43TGG_20250913_0_L2A",
+      "S2B_43TFG_20250913_0_L2A",
+      "S2B_43TGH_20250913_0_L2A",
+      "S2B_43TFH_20250913_0_L2A"
+    ],
+    "min_height": 1604,
+    "max_height": 4868
+  }
+}
