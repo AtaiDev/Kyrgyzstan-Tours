@@ -4,7 +4,7 @@ set -e
 python manage.py migrate --noinput
 
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
-  python manage.py ensure_superuser
+  python manage.py ensure_superuser || echo "Administrator was not created: check the DJANGO_SUPERUSER_* values above."
 fi
 
 exec gunicorn config.wsgi:application \
