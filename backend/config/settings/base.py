@@ -112,6 +112,9 @@ def build_database_settings():
                 "CONN_MAX_AGE": env_int("POSTGRES_CONN_MAX_AGE", 60),
                 # Serverless Postgres closes idle connections; check before reuse instead of failing the request.
                 "CONN_HEALTH_CHECKS": True,
+                # Hosted URLs usually go through a transaction-mode pooler (Neon "-pooler"), which can't keep server-side
+                # cursors open between queries.
+                "DISABLE_SERVER_SIDE_CURSORS": True,
                 "OPTIONS": dict(parse_qsl(parsed.query)),
             }
         }
