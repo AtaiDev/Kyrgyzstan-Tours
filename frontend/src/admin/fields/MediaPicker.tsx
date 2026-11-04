@@ -21,6 +21,9 @@ export function toBrief(asset: MediaAsset): MediaBrief {
     thumbnail_url: asset.thumbnail_url,
     width: asset.width,
     height: asset.height,
+    duration: asset.duration,
+    video_codec: asset.video_codec,
+    file_size: asset.file_size,
     original_name: asset.original_name,
     alt: asset.display_name,
   };

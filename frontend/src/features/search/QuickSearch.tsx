@@ -88,7 +88,7 @@ export function QuickSearch({ className }: { className?: string }) {
       <label htmlFor={`${listId}-input`} className="sr-only">
         {t("hero.searchLabel")}
       </label>
-      <div className="glass-panel flex items-center gap-3 rounded-full py-2 pr-2 pl-5">
+      <div className="glass-panel flex items-center gap-3 rounded-full py-1 pr-1 pl-4 sm:py-2 sm:pr-2 sm:pl-5">
         <Search className="h-5 w-5 shrink-0 text-milk-100/80" aria-hidden />
         <input
           id={`${listId}-input`}
@@ -107,12 +107,12 @@ export function QuickSearch({ className }: { className?: string }) {
           onKeyDown={onKeyDown}
           placeholder={t("hero.searchPlaceholder")}
           autoComplete="off"
-          className="h-11 min-w-0 flex-1 bg-transparent text-base text-white placeholder:text-milk-100/60 focus:outline-none"
+          className="h-10 min-w-0 flex-1 bg-transparent text-base sm:h-11 text-white placeholder:text-milk-100/60 focus:outline-none"
         />
         <button
           type="button"
           onClick={() => query.trim() && go(`${path("/tours")}?search=${encodeURIComponent(query.trim())}`)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sand-400 text-night-950 transition hover:bg-sand-300"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand-400 sm:h-11 sm:w-11 text-night-950 transition hover:bg-sand-300"
           aria-label={t("hero.searchLabel")}
         >
           {search.isFetching ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <ArrowRight className="h-5 w-5" aria-hidden />}

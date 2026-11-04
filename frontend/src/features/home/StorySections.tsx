@@ -5,7 +5,7 @@ import { Link } from "react-router";
 
 import { useFounder, useReviews, useSite } from "@/api/queries";
 import { SectionHeading } from "@/components/layout/SectionHeading";
-import { PhotoCredit, ResponsiveImage } from "@/components/media/ResponsiveImage";
+import { ResponsiveImage } from "@/components/media/ResponsiveImage";
 import { Reveal } from "@/components/motion/Reveal";
 import { LinkButton } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -15,6 +15,7 @@ import { useMotionSettings } from "@/hooks/useMotionSettings";
 import { useI18n } from "@/i18n/context";
 import type { PageSection } from "@/types/api";
 import { cn } from "@/utils/cn";
+import { HOVER_ZOOM } from "@/utils/motion";
 
 export function CultureSection({ section }: { section: PageSection }) {
   const { path } = useI18n();
@@ -28,15 +29,18 @@ export function CultureSection({ section }: { section: PageSection }) {
           {section.items.map((item, index) => {
             const content = (
               <>
-                <ResponsiveImage media={item.image} sizes="(min-width: 1024px) 30vw, 92vw" className="absolute inset-0 -z-10 h-full w-full transition duration-[1.4s] group-hover:scale-105" />
+                <ResponsiveImage media={item.image} sizes="(min-width: 1024px) 30vw, 92vw" className={cn(HOVER_ZOOM, "absolute inset-0 -z-10 h-full w-full group-hover:scale-[1.05]")} />
                 <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night-950/95 via-night-950/40 to-transparent" />
-                <span className="mb-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-sand-300 backdrop-blur-md">
+                <span className="mb-auto flex h-11 w-11 items-center justify-center rounded-full bg-night-950/45 text-sand-300 transition duration-500 ease-[var(--ease-out-expo)] group-hover:scale-110 group-hover:bg-sand-400 group-hover:text-night-950">
                   <Icon name={item.icon} className="h-5 w-5" />
                 </span>
                 <h3 className="font-display text-3xl font-semibold">{item.title}</h3>
-                <p className="mt-2 max-h-0 overflow-hidden text-sm leading-relaxed text-milk-100/85 opacity-0 transition-all duration-500 group-hover:max-h-40 group-hover:opacity-100 group-focus-visible:max-h-40 group-focus-visible:opacity-100 max-lg:max-h-40 max-lg:opacity-100">
-                  {item.text}
-                </p>
+                {/* Grid rows interpolate to the text's real height, unlike a guessed max-height that eases unevenly. */}
+                <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-700 ease-[var(--ease-out-expo)] group-hover:grid-rows-[1fr] group-focus-visible:grid-rows-[1fr] max-lg:grid-rows-[1fr]">
+                  <p className="min-h-0 overflow-hidden text-sm leading-relaxed text-milk-100/85 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-hover:delay-150 group-focus-visible:opacity-100 max-lg:opacity-100">
+                    <span className="block pt-2">{item.text}</span>
+                  </p>
+                </div>
               </>
             );
             const classes = cn(
@@ -102,7 +106,6 @@ export function NatureSection({ section }: { section: PageSection }) {
             {current ? (
               <motion.div key={current.id} className="absolute inset-0" initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.8 }}>
                 <ResponsiveImage media={current.image} sizes="50vw" className="h-full w-full" />
-                <PhotoCredit media={current.image} className="absolute right-4 bottom-3" />
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -263,21 +266,26 @@ export function CtaSection({ section }: { section: PageSection }) {
             {section.title}
           </h2>
           {section.subtitle ? <p className="mx-auto mt-6 max-w-2xl text-lg text-milk-100/85">{section.subtitle}</p> : null}
-          <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-wrap justify-center gap-2 sm:gap-4">
             {section.primary_label ? (
-              <LinkButton to={path(section.primary_link || "/tours")} variant="accent" size="lg" iconAfter={<ArrowRight className="h-4 w-4" aria-hidden />}>
+              <LinkButton
+                to={path(section.primary_link || "/tours")}
+                variant="accent"
+                size="lg"
+                className="flex-auto max-sm:gap-2 max-sm:px-3.5 max-sm:text-sm sm:flex-none"
+                iconAfter={<ArrowRight className="h-4 w-4" aria-hidden />}
+              >
                 {section.primary_label}
               </LinkButton>
             ) : null}
             {section.secondary_label ? (
-              <LinkButton to={path(section.secondary_link || "/contact")} variant="glass" size="lg">
+              <LinkButton to={path(section.secondary_link || "/contact")} variant="glass" size="lg" className="flex-auto max-sm:gap-2 max-sm:px-3.5 max-sm:text-sm sm:flex-none">
                 {section.secondary_label}
               </LinkButton>
             ) : null}
           </div>
         </Reveal>
       </div>
-      <PhotoCredit media={section.background} className="absolute right-4 bottom-3" />
     </section>
   );
 }

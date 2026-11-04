@@ -43,7 +43,7 @@ export function ContactForm() {
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        void form.submit((data) => publicApi.submitContact(language, data));
+        void form.submit((data) => publicApi.submitContact(language, data), event.currentTarget);
       }}
       className="relative grid grid-cols-1 gap-5 sm:grid-cols-2"
     >

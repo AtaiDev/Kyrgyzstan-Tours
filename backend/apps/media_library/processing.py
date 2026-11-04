@@ -7,6 +7,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from rest_framework.exceptions import ValidationError
 
 from .models import MediaAsset
+from .video import make_streamable, probe
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 VIDEO_EXTENSIONS = {".mp4", ".webm"}
@@ -44,7 +45,28 @@ def remove_variant_files(asset):
             field.delete(save=False)
 
 
+def process_video(asset):
+    """Make the upload start playing before it's fully downloaded and record its real size, length and codec."""
+    with asset.file.open("rb") as handle:
+        info = probe(handle)
+        data = handle.read() if info and not info.streamable else None
+    # Rewrite only after the handle is closed: an open file can't be replaced on Windows.
+    rewritten = make_streamable(data) if data else None
+    if rewritten:
+        name = Path(asset.file.name).name
+        asset.file.delete(save=False)
+        asset.file.save(name, ContentFile(rewritten), save=False)
+        info = probe(BytesIO(rewritten)) or info
+    asset.file_size = asset.file.size
+    if info:
+        asset.width, asset.height, asset.duration, asset.video_codec = info.width, info.height, info.duration, info.codec[:8]
+    asset.save(update_fields=["file", "file_size", "width", "height", "duration", "video_codec", "updated_at"])
+    return asset
+
+
 def generate_variants(asset):
+    if asset.kind == MediaAsset.Kind.VIDEO:
+        return process_video(asset)
     asset.file_size = asset.file.size
     if asset.kind != MediaAsset.Kind.IMAGE:
         asset.save(update_fields=["file_size", "updated_at"])

@@ -30,6 +30,10 @@ class MediaAsset(TimeStampedModel, TranslatableModel):
     thumbnail = models.ImageField(upload_to=variant_upload_path, blank=True, max_length=255)
     width = models.PositiveIntegerField(null=True, blank=True)
     height = models.PositiveIntegerField(null=True, blank=True)
+    # Videos only, read from the MP4 container on upload (see video.py).
+    duration = models.FloatField(null=True, blank=True)
+    # A database default too, so a still-running previous release can insert rows while this one migrates.
+    video_codec = models.CharField(max_length=8, blank=True, db_default="")
     file_size = models.PositiveBigIntegerField(default=0)
     original_name = models.CharField(max_length=255, blank=True)
     folder = models.CharField(max_length=60, blank=True, db_index=True)

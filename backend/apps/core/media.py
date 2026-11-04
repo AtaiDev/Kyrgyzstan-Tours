@@ -10,6 +10,8 @@ from django.views.static import serve
 
 RANGE_PATTERN = re.compile(r"^bytes=(\d*)-(\d*)$")
 CHUNK_SIZE = 64 * 1024
+# Uploads get unique generated names, so a cached copy never goes stale; lets the hero video replay from disk cache.
+CACHE_CONTROL = "public, max-age=604800"
 
 
 def _stream(path, start, length):
@@ -45,6 +47,7 @@ def serve_media(request, path, document_root):
     if not header:
         response = serve(request, path, document_root=document_root)
         response["Accept-Ranges"] = "bytes"
+        response["Cache-Control"] = CACHE_CONTROL
         return response
     try:
         full_path = Path(safe_join(str(document_root), path))
@@ -66,4 +69,5 @@ def serve_media(request, path, document_root):
     response["Content-Range"] = f"bytes {start}-{end}/{stat.st_size}"
     response["Accept-Ranges"] = "bytes"
     response["Last-Modified"] = http_date(stat.st_mtime)
+    response["Cache-Control"] = CACHE_CONTROL
     return response

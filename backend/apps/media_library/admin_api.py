@@ -31,6 +31,8 @@ class MediaAssetAdminSerializer(TranslatableAdminSerializer):
             "thumbnail_url",
             "width",
             "height",
+            "duration",
+            "video_codec",
             "file_size",
             "original_name",
             "folder",
@@ -45,7 +47,7 @@ class MediaAssetAdminSerializer(TranslatableAdminSerializer):
             "display_name",
             "missing_translations",
         )
-        read_only_fields = ("kind", "width", "height", "file_size", "original_name", "created_at", "updated_at")
+        read_only_fields = ("kind", "width", "height", "duration", "video_codec", "file_size", "original_name", "created_at", "updated_at")
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

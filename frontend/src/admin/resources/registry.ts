@@ -40,7 +40,7 @@ export const RESOURCES: ResourceConfig[] = [
 export const RESOURCE_MAP: Record<string, ResourceConfig> = Object.fromEntries(RESOURCES.map((resource) => [resource.key, resource]));
 
 const SPECIAL_PATHS: Record<string, string> = {
-  sections: "/admin/r/sections?page=home",
+  sections: "/admin/r/sections?page_key=home",
   founder: "/admin/founder",
   "site-settings": "/admin/settings/site",
   seo: "/admin/r/seo-pages",

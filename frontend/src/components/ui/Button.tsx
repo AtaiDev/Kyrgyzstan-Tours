@@ -21,7 +21,8 @@ const variants: Record<ButtonVariant, string> = {
 const sizes: Record<ButtonSize, string> = {
   sm: "h-9 px-4 text-sm gap-2",
   md: "h-11 px-6 text-[0.95rem] gap-2.5",
-  lg: "h-14 px-8 text-base gap-3",
+  // 48px on phones (a comfortable touch target that does not dominate a 390px screen), 56px from sm up.
+  lg: "h-12 px-6 text-[0.95rem] gap-2.5 sm:h-14 sm:px-8 sm:text-base sm:gap-3",
 };
 
 export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSize = "md", className?: string) {

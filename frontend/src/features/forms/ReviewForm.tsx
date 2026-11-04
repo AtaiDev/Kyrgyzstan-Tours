@@ -51,6 +51,7 @@ export function ReviewForm({ tours, defaultTour }: { tours: Array<{ slug: string
             tour: data.tour || null,
             travel_date: data.travel_date || null,
           }),
+          event.currentTarget,
         );
       }}
       className="relative grid grid-cols-1 gap-5 sm:grid-cols-2"
@@ -66,7 +67,7 @@ export function ReviewForm({ tours, defaultTour }: { tours: Array<{ slug: string
       <SelectField
         label={t("form.tour")}
         value={values.tour}
-        onChange={(event) => setField("tour", event.target.value)}
+        onChange={(value) => setField("tour", value)}
         placeholder={t("form.selectTour")}
         options={tours.map((tour) => ({ value: tour.slug, label: tour.title }))}
       />

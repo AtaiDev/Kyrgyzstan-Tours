@@ -20,3 +20,28 @@ services:
         sync: false
       - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
+      # Persistent storage (free): Neon Postgres + Cloudflare R2. Without them every restart resets the site to the
+      # demo content and loses admin edits, uploads, bookings and reviews. Setup: README → «Постоянное хранение».
+      - key: DATABASE_URL
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_DOMAIN
+        sync: false
+      # Email notifications about new bookings, messages and reviews awaiting moderation (optional).
+      - key: INQUIRY_NOTIFICATION_EMAILS
+        sync: false
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false

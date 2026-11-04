@@ -238,7 +238,7 @@ ARTICLES = [
         "cover": "beshbarmak",
         "author": 2,
         "published": "2025-06-28T09:00:00+06:00",
-        "featured": False,
+        "featured": True,
         "tours": ["osh-sulaiman-too", "issyk-kul-south-shore"],
         "tr": {
             "ru": {

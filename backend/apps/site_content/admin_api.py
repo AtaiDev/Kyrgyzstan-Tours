@@ -1,4 +1,5 @@
 from django.db import transaction
+from django_filters import rest_framework as filters
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -112,6 +113,15 @@ class PageSectionAdminSerializer(TranslatableAdminSerializer):
         replace_nested_items(instance, "items", items)
 
 
+class PageSectionAdminFilter(filters.FilterSet):
+    # Exposed as `page_key`: a `page` query param would be read by the paginator as a page number ("home" -> 404).
+    page_key = filters.ChoiceFilter(field_name="page", choices=PageSection._meta.get_field("page").choices)
+
+    class Meta:
+        model = PageSection
+        fields = ("is_visible",)
+
+
 class PageSectionAdminViewSet(AdminModelViewSet):
     queryset = PageSection.objects.select_related("background", "background_video", "background_video_light").prefetch_related(
         "translations",
@@ -120,7 +130,7 @@ class PageSectionAdminViewSet(AdminModelViewSet):
         "items__image__translations",
     )
     serializer_class = PageSectionAdminSerializer
-    filterset_fields = ("page", "is_visible")
+    filterset_class = PageSectionAdminFilter
     search_fields = ("key", "translations__title")
     ordering = ("page", "position", "id")
 

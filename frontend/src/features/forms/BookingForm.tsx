@@ -7,7 +7,7 @@ import { SelectField, TextAreaField, TextField } from "@/components/ui/Fields";
 import { useI18n } from "@/i18n/context";
 import type { BookingPayload } from "@/types/api";
 
-import { ConsentField, FormAlert, FormSuccess, Honeypot, SubmitButton } from "./FormParts";
+import { ChoiceField, ConsentField, FormAlert, FormSuccess, Honeypot, StepperField, SubmitButton } from "./FormParts";
 import type { FormErrors } from "./useForm";
 import { EMAIL_PATTERN, useForm } from "./useForm";
 
@@ -49,8 +49,9 @@ export function BookingForm({ tourSlug, guideSlug, tone = "light", tours }: { to
   const form = useForm(initial, validate);
   const { values, errors, setField, status } = form;
 
-  const onSubmit = async (event: React.FormEvent) => {
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const element = event.currentTarget;
     await form.submit((data) =>
       publicApi.submitBooking(language, {
         ...data,
@@ -60,6 +61,7 @@ export function BookingForm({ tourSlug, guideSlug, tone = "light", tours }: { to
         travelers: Number(data.travelers),
         source_page: location.pathname,
       }),
+      element,
     );
   };
 
@@ -87,7 +89,7 @@ export function BookingForm({ tourSlug, guideSlug, tone = "light", tours }: { to
           wrapperClassName="sm:col-span-2"
           label={t("form.tour")}
           value={values.tour}
-          onChange={(event) => setField("tour", event.target.value)}
+          onChange={(value) => setField("tour", value)}
           placeholder={t("form.selectTour")}
           options={tours.map((tour) => ({ value: tour.slug, label: tour.title }))}
         />
@@ -111,16 +113,19 @@ export function BookingForm({ tourSlug, guideSlug, tone = "light", tours }: { to
         error={errors.email}
         required
       />
-      <SelectField
+      <ChoiceField
         tone={tone}
+        className="sm:col-span-2"
+        name="preferred_contact"
         label={t("form.preferredContact")}
         value={values.preferred_contact}
-        onChange={(event) => setField("preferred_contact", event.target.value as BookingValues["preferred_contact"])}
+        onChange={(value) => setField("preferred_contact", value)}
         options={CONTACT_METHODS.map((method) => ({ value: method, label: t(`form.contact.${method}`) }))}
       />
       <TextField
         tone={tone}
         type="tel"
+        wrapperClassName="sm:col-span-2"
         label={t("form.phone")}
         autoComplete="tel"
         value={values.phone}
@@ -138,16 +143,7 @@ export function BookingForm({ tourSlug, guideSlug, tone = "light", tours }: { to
         error={errors.travel_date}
         optional={t("form.optional")}
       />
-      <TextField
-        tone={tone}
-        type="number"
-        min={1}
-        max={60}
-        label={t("form.travelers")}
-        value={values.travelers}
-        onChange={(event) => setField("travelers", Number(event.target.value))}
-        error={errors.travelers}
-      />
+      <StepperField tone={tone} label={t("form.travelers")} value={values.travelers} min={1} max={60} onChange={(value) => setField("travelers", value)} error={errors.travelers} />
       <TextAreaField
         tone={tone}
         wrapperClassName="sm:col-span-2"

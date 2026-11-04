@@ -24,7 +24,7 @@ export function SeasonsSection({ section }: { section: PageSection }) {
     <section className="bg-milk-50 py-24 sm:py-32" aria-labelledby="seasons-title">
       <div className="container-page">
         <SectionHeading id={`${section.key}-title`} eyebrow={section.eyebrow} title={section.title} subtitle={section.subtitle} />
-        <div role="tablist" aria-label={section.title} className="mb-10 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div role="tablist" aria-label={section.title} className="mb-10 grid grid-cols-4 gap-2">
           {seasons.map((item, index) => (
             <button
               key={item.code}
@@ -35,12 +35,13 @@ export function SeasonsSection({ section }: { section: PageSection }) {
               aria-controls="season-panel"
               onClick={() => setActive(index)}
               className={cn(
-                "rounded-2xl border px-5 py-4 text-left transition",
+                // Phones: a compact row of four; the months are already shown in the season panel below.
+                "rounded-2xl border px-2 py-3 text-center transition sm:px-5 sm:py-4 sm:text-left",
                 index === active ? "border-night-900 bg-night-900 text-milk-50" : "border-graphite-200 bg-white text-night-900 hover:border-night-900/40",
               )}
             >
-              <span className="block font-display text-2xl font-semibold">{item.name}</span>
-              <span className={cn("text-xs", index === active ? "text-milk-200/70" : "text-graphite-500")}>
+              <span className="block font-display text-lg font-semibold sm:text-2xl">{item.name}</span>
+              <span className={cn("hidden text-xs sm:block", index === active ? "text-milk-200/70" : "text-graphite-500")}>
                 {item.month_numbers.map((month) => formatMonth(month)).join(" · ")}
               </span>
             </button>

@@ -6,6 +6,7 @@ import { publicApi } from "@/api/public";
 import { Button } from "@/components/ui/Button";
 import { inputClasses } from "@/components/ui/Fields";
 import { useI18n } from "@/i18n/context";
+import { cn } from "@/utils/cn";
 
 import { EMAIL_PATTERN } from "./useForm";
 
@@ -51,7 +52,7 @@ export function NewsletterForm({ tone = "dark" }: { tone?: "light" | "dark" }) {
       <label htmlFor={id} className="sr-only">
         {t("newsletter.placeholder")}
       </label>
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex gap-2 sm:gap-3">
         <input
           id={id}
           type="email"
@@ -63,9 +64,9 @@ export function NewsletterForm({ tone = "dark" }: { tone?: "light" | "dark" }) {
             setError(null);
           }}
           aria-invalid={Boolean(error)}
-          className={inputClasses(tone, Boolean(error))}
+          className={cn(inputClasses(tone, Boolean(error)), "h-12 min-w-0 flex-1 sm:h-14")}
         />
-        <Button type="submit" variant={tone === "dark" ? "accent" : "primary"} size="lg" loading={state === "sending"}>
+        <Button type="submit" variant={tone === "dark" ? "accent" : "primary"} size="lg" loading={state === "sending"} className="max-sm:px-4">
           {t("newsletter.submit")}
           <ArrowRight className="h-4 w-4" aria-hidden />
         </Button>

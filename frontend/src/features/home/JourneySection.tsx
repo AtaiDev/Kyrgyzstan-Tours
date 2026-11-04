@@ -5,7 +5,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Link } from "react-router";
 
 import { useScenes } from "@/api/queries";
-import { PhotoCredit, ResponsiveImage } from "@/components/media/ResponsiveImage";
+import { ResponsiveImage } from "@/components/media/ResponsiveImage";
 import { useDeviceCapabilities } from "@/hooks/useDeviceCapabilities";
 import { useInView } from "@/hooks/useInView";
 import { useCoarsePointer } from "@/hooks/useMediaQuery";
@@ -393,17 +393,6 @@ function ChapterTitle({ scene, index, total }: { scene: JourneyScene; index: num
   );
 }
 
-function DataCredit({ scene }: { scene: JourneyScene }) {
-  const { t, path } = useI18n();
-  if (!scene.terrain) return <PhotoCredit media={scene.photo} />;
-  const year = scene.terrain.captured_on?.slice(0, 4) ?? "";
-  return (
-    <Link to={path("/credits")} className="text-[0.64rem] tracking-wide text-white/65 hover:text-white sm:text-[0.68rem]">
-      {t("journey.dataCredit", { year })}
-    </Link>
-  );
-}
-
 export function JourneySection({ section }: { section: PageSection }) {
   const { data: scenes = [] } = useScenes();
   if (scenes.length === 0) return null;
@@ -594,9 +583,6 @@ function JourneyExperience({ section, scenes }: { section: PageSection; scenes: 
                 <motion.div className="h-px origin-left bg-sand-400" style={{ scaleX: scrollYProgress }} />
               </div>
             ) : null}
-            <div className="mt-2 flex justify-end sm:mt-3">
-              <DataCredit scene={scene} />
-            </div>
           </div>
         </div>
       </div>

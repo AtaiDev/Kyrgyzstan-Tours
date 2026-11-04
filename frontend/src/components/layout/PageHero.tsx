@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import type { ReactNode } from "react";
 import { useRef } from "react";
 
-import { PhotoCredit, ResponsiveImage } from "@/components/media/ResponsiveImage";
+import { ResponsiveImage } from "@/components/media/ResponsiveImage";
 import { RevealWords } from "@/components/motion/Reveal";
 import type { Crumb } from "@/components/navigation/Breadcrumbs";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
@@ -47,7 +47,6 @@ export function PageHero({ title, eyebrow, subtitle, image, crumbs, children, si
         {subtitle ? <p className="mt-6 max-w-2xl text-lg leading-relaxed text-milk-100/85 sm:text-xl">{subtitle}</p> : null}
         {children ? <div className="mt-8">{children}</div> : null}
       </div>
-      <PhotoCredit media={image} className="absolute right-4 bottom-3 sm:right-6" />
     </section>
   );
 }

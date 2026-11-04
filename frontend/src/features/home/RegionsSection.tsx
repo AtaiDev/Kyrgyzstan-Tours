@@ -18,6 +18,7 @@ import { LANGUAGE_META, LANGUAGES } from "@/i18n/languages";
 import type { PluralKey } from "@/i18n/types";
 import type { Media, PageSection, RegionCard, RegionDetail, SiteStats } from "@/types/api";
 import { cn } from "@/utils/cn";
+import { HOVER_ZOOM } from "@/utils/motion";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -177,7 +178,7 @@ function RegionTile({ media, title, subtitle, badge, accent, active, highlighted
         media={media}
         alt=""
         sizes="(min-width: 1024px) 22vw, 50vw"
-        className="absolute inset-0 -z-10 h-full w-full transition duration-700 ease-out group-hover:scale-[1.06]"
+        className={cn(HOVER_ZOOM, "absolute inset-0 -z-10 h-full w-full group-hover:scale-[1.05]")}
       />
       <span className="absolute inset-0 -z-10 bg-gradient-to-t from-night-950/95 via-night-950/45 to-night-950/0" aria-hidden />
       <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-night-950/75 px-2.5 py-1 text-[0.72rem] font-semibold text-milk-50">

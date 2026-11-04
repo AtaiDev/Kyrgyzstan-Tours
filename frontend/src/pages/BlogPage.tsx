@@ -32,7 +32,7 @@ export default function BlogPage() {
                 type="button"
                 role="tab"
                 aria-selected={active === category.slug}
-                onClick={() => setParams(updateSearch(params, { category: category.slug || null }))}
+                onClick={() => setParams(updateSearch(params, { category: category.slug || null }), { preventScrollReset: true })}
                 className={cn(
                   "shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition",
                   active === category.slug ? "bg-night-900 text-milk-50" : "bg-white text-graphite-700 hover:text-night-900",

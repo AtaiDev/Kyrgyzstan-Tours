@@ -1,5 +1,5 @@
 import { AlertCircle, Save } from "lucide-react";
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useBlocker } from "react-router";
 
@@ -17,7 +17,7 @@ import { ADMIN_LANGUAGE, flattenFields, languageHasErrors, missingLanguageCount 
 interface ResourceFormProps {
   sections: FormSection[];
   values: FormValues;
-  onChange: (values: FormValues) => void;
+  onChange: Dispatch<SetStateAction<FormValues>>;
   errors: FormErrors;
   onSubmit: () => void;
   saving: boolean;
@@ -90,18 +90,27 @@ export function ResourceForm({ sections, values, onChange, errors, onSubmit, sav
           </div>
         </div>
       ) : null}
-      {sections.map((section) => (
-        <fieldset key={section.title} disabled={readOnly} className="rounded-2xl border border-graphite-200 bg-white p-5 shadow-sm sm:p-6">
-          <legend className="sr-only">{section.title}</legend>
-          <h2 className="text-lg font-semibold text-night-900">{section.title}</h2>
-          {section.description ? <p className="mt-1 text-sm text-graphite-500">{section.description}</p> : null}
-          <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-            {section.fields.map((field) => (
-              <FieldRenderer key={field.name} field={field} values={values} onChange={onChange} language={language} errors={errors} />
-            ))}
-          </div>
-        </fieldset>
-      ))}
+      {sections
+        .filter((section) => !section.when || section.when(values))
+        .map((section, index) => {
+          // Conditions only hide fields from view; their values stay in the form and are saved unchanged.
+          const description = typeof section.description === "function" ? section.description(values) : section.description;
+          const fields = section.fields.filter((field) => !field.when || field.when(values));
+          return (
+            <fieldset key={`${index}-${section.title}`} disabled={readOnly} className="rounded-2xl border border-graphite-200 bg-white p-5 shadow-sm sm:p-6">
+              <legend className="sr-only">{section.title}</legend>
+              <h2 className="text-lg font-semibold text-night-900">{section.title}</h2>
+              {description ? <p className="mt-1 text-sm text-graphite-500">{description}</p> : null}
+              {fields.length ? (
+                <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+                  {fields.map((field) => (
+                    <FieldRenderer key={field.name} field={field} values={values} onChange={onChange} onUpdate={onChange} language={language} errors={errors} />
+                  ))}
+                </div>
+              ) : null}
+            </fieldset>
+          );
+        })}
       {!readOnly ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-graphite-200 bg-white/95 backdrop-blur-md lg:left-72">
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">

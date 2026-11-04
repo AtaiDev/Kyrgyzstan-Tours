@@ -23,6 +23,7 @@ class PublicMediaSerializer(LocalizedModelSerializer):
             "thumbnail_url",
             "width",
             "height",
+            "duration",
             "author",
             "license",
             "license_url",

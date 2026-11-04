@@ -296,6 +296,10 @@ Vite проксирует `/api`, `/media`, `/static`, `/django-admin`, `/sitema
 | `DATABASE_ENGINE` | `sqlite` или `postgres` | `sqlite` |
 | `SQLITE_PATH` | Путь к файлу SQLite | `backend/db.sqlite3` |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | Подключение к PostgreSQL | см. `.env.example` |
+| `DATABASE_URL` | Строка подключения к PostgreSQL одной строкой (Neon, Render, Supabase); если задана, `DATABASE_ENGINE` и `POSTGRES_*` не нужны | пусто |
+| `R2_BUCKET`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_DOMAIN` | Хранить загрузки в Cloudflare R2 вместо `DJANGO_MEDIA_ROOT` (см. «Постоянное хранение»); `R2_ENDPOINT_URL` — для другого S3-совместимого хранилища | пусто |
+| `SEED_DEMO_IF_EMPTY` | При `DATABASE_URL` заполнить пустую базу демо-контентом при старте контейнера | `true` |
+| `DJANGO_ENV_FILE` | Какой файл окружения читать вместо `.env`, например `.env.production` | `.env` |
 | `DJANGO_MEDIA_ROOT` | Папка для загруженных файлов | `backend/media` |
 | `DJANGO_MEDIA_URL` | URL-префикс медиафайлов | `/media/` |
 | `DJANGO_SERVE_MEDIA` | Отдавать медиа через Django при `DEBUG=False` (для Docker и Render; на нагруженном сервере — через nginx) | `false` |
@@ -304,7 +308,7 @@ Vite проксирует `/api`, `/media`, `/static`, `/django-admin`, `/sitema
 | `MEDIA_MAX_IMAGE_SIZE_MB`, `MEDIA_MAX_VIDEO_SIZE_MB` | Лимиты загрузки | `12` и `80` |
 | `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, `DJANGO_SUPERUSER_PASSWORD` | Данные для команды `ensure_superuser` | пусто |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL` | SMTP для уведомлений | письма не отправляются, пока не задан `EMAIL_HOST` |
-| `INQUIRY_NOTIFICATION_EMAILS` | Куда отправлять уведомления о заявках и сообщениях (через запятую) | пусто |
+| `INQUIRY_NOTIFICATION_EMAILS` | Куда отправлять уведомления о заявках, сообщениях и отзывах на модерации (через запятую) | пусто |
 | `THROTTLE_PUBLIC_READ`, `THROTTLE_PUBLIC_FORMS`, `THROTTLE_LOGIN` | Ограничение частоты запросов | `600/minute`, `20/hour`, `10/minute` |
 | `DJANGO_SECURE_SSL_REDIRECT`, `DJANGO_SECURE_HSTS_SECONDS`, `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS` | HTTPS-редирект и HSTS в production | `true`, `2592000`, `false` |
 
@@ -484,7 +488,30 @@ GitHub хранит код, но не запускает серверную ча
 
 Каждый `git push` в ветку `main` пересобирает сайт автоматически.
 
-Особенности бесплатного тарифа: при простое сервис засыпает, и первое открытие после паузы занимает до минуты. Файловая система временная: правки в админке и загруженные файлы при перезапуске и новом деплое возвращаются к демо-данным. Для постоянной работы подключите PostgreSQL (`DATABASE_ENGINE=postgres` и переменные `POSTGRES_*`) и постоянное хранилище для `DJANGO_MEDIA_ROOT`.
+Особенности бесплатного тарифа: при простое сервис засыпает, и первое открытие после паузы занимает до минуты. Диск у сервиса временный, поэтому без внешнего хранилища правки в админке, загруженные файлы, заявки и отзывы при каждом перезапуске и деплое пропадают. Подключите постоянное хранение — тоже бесплатно, см. ниже.
+
+### Постоянное хранение: Neon + Cloudflare R2 (бесплатно)
+
+База данных живёт в Neon (PostgreSQL), фото и видео — в Cloudflare R2. Оба сервиса бесплатны в пределах лимитов, которых этому сайту хватает с запасом (Neon — 0,5 ГБ базы, R2 — 10 ГБ файлов и бесплатный исходящий трафик).
+
+1. **Neon.** Зарегистрируйтесь на [neon.tech](https://neon.tech), создайте проект (регион — Frankfurt, ближе к Render) и скопируйте строку подключения **Pooled connection** вида `postgresql://…-pooler…neon.tech/neondb?sslmode=require`. Это `DATABASE_URL`.
+2. **Cloudflare R2.** В [панели Cloudflare](https://dash.cloudflare.com) откройте **R2 Object Storage**:
+   - создайте бакет, например `kyrgyzstan-tours-media` — это `R2_BUCKET`; *Account ID* со страницы R2 — это `R2_ACCOUNT_ID`;
+   - в настройках бакета включите **Public Development URL** и скопируйте адрес `pub-….r2.dev` — это `R2_PUBLIC_DOMAIN` (позже его можно заменить своим доменом);
+   - там же в **CORS Policy** вставьте содержимое [`docs/deploy/r2-cors.json`](docs/deploy/r2-cors.json) — без этого не загрузятся 3D-сцены и не будет работать кнопка «Постер из первого кадра» в админке;
+   - в **Manage API tokens** создайте токен с правом **Object Read & Write** для этого бакета: *Access Key ID* — `R2_ACCESS_KEY_ID`, *Secret Access Key* — `R2_SECRET_ACCESS_KEY`.
+3. **Залейте контент со своего компьютера** — так быстрее, чем на бесплатном сервере. Скопируйте `backend/.env.production.example` в `backend/.env.production` (файл не попадает в git), впишите значения и выполните:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File backend\scripts\publish-content.ps1
+   ```
+
+   Скрипт создаст таблицы в Neon и загрузит демо-контент со всеми фото и видео в R2 (несколько минут). Повторный запуск ничего не меняет.
+4. **Render.** В сервисе откройте **Environment**, добавьте те же шесть переменных (`DATABASE_URL`, `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_DOMAIN`) и сохраните — Render перезапустит сайт. С этого момента всё, что меняется в админке, сохраняется навсегда.
+
+Если шаг 3 пропустить, сайт заполнит пустую базу сам при первом запуске, но на бесплатном сервере это заметно дольше. Прерванное заполнение откатывается целиком и начинается заново при следующем запуске.
+
+**Уведомления на почту** о заявках, сообщениях и отзывах на модерации: добавьте в Render `INQUIRY_NOTIFICATION_EMAILS` (адреса через запятую) и SMTP — `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`. Для Gmail: `smtp.gmail.com` и пароль приложения из настроек аккаунта Google.
 
 ### Docker на любом сервере
 

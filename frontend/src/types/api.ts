@@ -9,6 +9,8 @@ export interface Media {
   thumbnail_url: string;
   width: number | null;
   height: number | null;
+  /** Seconds; videos only. */
+  duration?: number | null;
   author: string;
   license: string;
   license_url: string;

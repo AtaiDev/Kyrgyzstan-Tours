@@ -71,6 +71,14 @@
   --animate-ken-burns: ken-burns 26s var(--ease-in-out-soft) infinite alternate;
   --animate-float-slow: float-slow 7s var(--ease-in-out-soft) infinite;
   --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-image-in: image-in 0.7s ease-out;
+
+  /* Only a `from` keyframe: the fade ends at the element's own opacity, so callers' opacity utilities still apply. */
+  @keyframes image-in {
+    from {
+      opacity: 0;
+    }
+  }
 
   @keyframes ken-burns {
     from {
@@ -108,11 +116,6 @@
     scroll-padding-top: 6rem;
   }
 
-  html.lenis-smooth,
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
     @apply bg-milk-100 font-sans text-graphite-900 antialiased;
     overflow-x: clip;
@@ -148,10 +151,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-
     *,
     *::before,
     *::after {
@@ -174,6 +173,27 @@
   .eyebrow::before {
     content: "";
     @apply h-px w-8 bg-current opacity-60;
+  }
+
+  /* Card hover system: only transform and opacity animate. Hover-zoomed media is promoted to its own layer up
+     front, so a hover never starts with a re-raster (the visible "jerk") and the zoom runs on the compositor. */
+  .hover-zoom {
+    will-change: transform, scale, translate;
+    backface-visibility: hidden;
+  }
+
+  .eyebrow-hover::before {
+    transform-origin: left center;
+    transition:
+      transform 0.7s var(--ease-out-expo),
+      opacity 0.7s var(--ease-out-expo);
+  }
+
+  @media (hover: hover) {
+    .group:hover .eyebrow-hover::before {
+      transform: scaleX(1.75);
+      opacity: 1;
+    }
   }
 
   .display-xl {

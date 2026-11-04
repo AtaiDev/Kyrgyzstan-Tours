@@ -33,7 +33,7 @@ export function DestinationsSection({ section }: { section: PageSection }) {
               <Reveal
                 key={destination.slug}
                 delay={index * 0.08}
-                className={cn(index === 0 && "md:col-span-2 lg:row-span-2", index === 3 && "lg:col-span-2")}
+                className={cn(index === 0 && "md:col-span-2 lg:row-span-2", index === 3 && "lg:col-span-2", index === 5 && "md:col-span-2 lg:col-span-3")}
               >
                 <DestinationCard destination={destination} variant={index === 0 ? "feature" : "default"} className="h-full" />
               </Reveal>
@@ -142,10 +142,10 @@ export function StoriesSection({ section }: { section: PageSection }) {
             <Reveal>
               <ArticleCard article={first} variant="large" />
             </Reveal>
-            <div className="grid grid-cols-1 gap-10">
+            <div className="grid grid-cols-1 content-between gap-8">
               {rest.map((article, index) => (
                 <Reveal key={article.slug} delay={0.1 + index * 0.08}>
-                  <ArticleCard article={article} />
+                  <ArticleCard article={article} variant="compact" />
                 </Reveal>
               ))}
             </div>

@@ -4,7 +4,7 @@ import { ICON_NAMES } from "@/components/ui/Icon";
 
 import { dateColumn, textColumn, titleColumn, toggleColumn, translationsColumn } from "./columns";
 import { ATTRACTION_KIND_OPTIONS, DIFFICULTY_OPTIONS, mediaSection, publishingFields, REGION_CODE_OPTIONS, SECTION_LABELS, seoSection, slugField } from "./shared";
-import type { ResourceConfig } from "./types";
+import type { FieldConfig, ResourceConfig } from "./types";
 
 export const regionsResource: ResourceConfig = {
   key: "regions",
@@ -365,6 +365,67 @@ export const scenesResource: ResourceConfig = {
   ],
 };
 
+// What each block actually renders, so its form offers only fields that change the live page. Blocks built from
+// catalogue data name the admin section their cards and photos come from instead.
+interface SectionCapabilities {
+  subtitle?: boolean;
+  body?: boolean;
+  primary?: boolean;
+  secondary?: boolean;
+  limit?: boolean;
+  background?: boolean;
+  video?: boolean;
+  items?: boolean;
+  itemImages?: boolean;
+  source?: string;
+}
+
+const ALL_CAPABILITIES: SectionCapabilities = { subtitle: true, body: true, primary: true, secondary: true, limit: true, background: true, video: true, items: true, itemImages: true };
+
+const SECTION_CAPABILITIES: Record<string, SectionCapabilities> = {
+  hero: { subtitle: true, primary: true, secondary: true, limit: true, background: true, video: true, items: true },
+  regions: { subtitle: true, primary: true, source: "Фото, описания и цвета областей меняются в разделе «Области Кыргызстана»." },
+  journey: { subtitle: true, primary: true, source: "Маршрут, точки и фото берутся из разделов «Маршруты» и «3D-сцены»." },
+  destinations: { subtitle: true, limit: true, source: "Карточки — направления с отметкой «Избранное» в разделе «Направления»; фото — обложка направления." },
+  tours: { subtitle: true, limit: true, source: "Карточки — экскурсии с отметкой «Избранное» в разделе «Экскурсии»; фото — обложка экскурсии." },
+  guides: { subtitle: true, limit: true, source: "Карточки и фото берутся из раздела «Гиды»." },
+  routes: { subtitle: true, limit: true, source: "Карточки берутся из раздела «Маршруты»." },
+  seasons: { subtitle: true, source: "Сезоны и подходящие экскурсии берутся из разделов «Сезоны» и «Экскурсии»." },
+  culture: { subtitle: true, background: true, items: true, itemImages: true },
+  nature: { subtitle: true, primary: true, items: true },
+  stories: { subtitle: true, limit: true, source: "Статьи с отметкой «Избранное» в разделе «Блог и статьи»; фото — обложка статьи." },
+  testimonials: { subtitle: true, primary: true, limit: true, source: "Показываются опубликованные отзывы из раздела «Отзывы»." },
+  founder: { primary: true, source: "Фото, имя и рассказ меняются в разделе «Основной гид и основатель»." },
+  advantages: { subtitle: true, items: true },
+  cta: { subtitle: true, primary: true, secondary: true, background: true },
+  newsletter: { subtitle: true },
+  about_hero: { subtitle: true, background: true },
+  about_story: { body: true, background: true },
+  about_mission: { body: true },
+  about_principles: { subtitle: true, items: true },
+  about_founder: { source: "Фото, имя и рассказ меняются в разделе «Основной гид и основатель»." },
+  about_team: { subtitle: true, source: "Карточки сотрудников берутся из раздела «Сотрудники и команда»." },
+  about_contacts: { subtitle: true, primary: true, source: "Телефон, почта и адрес меняются в разделе «Контакты»." },
+};
+
+const capabilities = (values: Record<string, unknown>) => SECTION_CAPABILITIES[String(values.key)] ?? ALL_CAPABILITIES;
+const can = (flag: keyof Omit<SectionCapabilities, "source">) => (values: Record<string, unknown>) => Boolean(capabilities(values)[flag]);
+
+const ITEM_VALUE_HELP = "Для цифр первого экрана: число со знаком «+» или «%», если нужно, — например 7439, 8000+, 90%+. Число анимируется при появлении.";
+const ITEMS_DESCRIPTION = "Карточки культуры, преимущества, пункты «Природа и приключения», принципы и цифры нижней панели первого экрана. Порядок меняется стрелками, лишнее можно скрыть или удалить.";
+
+const SECTION_ITEM_FIELDS: FieldConfig[] = [
+  { type: "text", name: "title", label: "Заголовок", translated: true, required: true, maxLength: 160 },
+  { type: "text", name: "label", label: "Подпись", translated: true, maxLength: 80 },
+  { type: "textarea", name: "text", label: "Текст", translated: true, rows: 2 },
+  { type: "select", name: "icon", label: "Иконка", allowEmpty: true, options: ICON_NAMES.map((name) => ({ value: name, label: name })) },
+  { type: "text", name: "value", label: "Число / значение", maxLength: 30, help: ITEM_VALUE_HELP },
+  { type: "text", name: "link", label: "Ссылка", maxLength: 255 },
+  { type: "boolean", name: "is_visible", label: "Показывать" },
+  // Only hidden where the block doesn't render item photos; the value is still saved unchanged.
+  { type: "image", name: "image", label: "Изображение", folder: "sections", when: can("itemImages") },
+];
+
 export const sectionsResource: ResourceConfig = {
   key: "sections",
   endpoint: "/admin/sections/",
@@ -377,7 +438,7 @@ export const sectionsResource: ResourceConfig = {
   translated: true,
   allowCreate: false,
   allowDelete: false,
-  fixedParams: ["page"],
+  fixedParams: ["page_key"],
   columns: [
     { key: "key", label: "Блок", render: (item) => <span className="font-semibold text-night-900">{SECTION_LABELS[String(item.key)] ?? String(item.key)}</span> },
     { key: "title", label: "Заголовок", render: (item) => <span className="text-graphite-600">{String(item.display_name ?? "").split(" · ").slice(1).join(" · ")}</span> },
@@ -390,52 +451,37 @@ export const sectionsResource: ResourceConfig = {
       fields: [
         { type: "text", name: "eyebrow", label: "Надзаголовок", translated: true, maxLength: 120 },
         { type: "text", name: "title", label: "Заголовок", translated: true, required: true, maxLength: 200 },
-        { type: "textarea", name: "subtitle", label: "Подзаголовок", translated: true, rows: 3 },
-        { type: "textarea", name: "body", label: "Основной текст", translated: true, rows: 5 },
+        { type: "textarea", name: "subtitle", label: "Подзаголовок", translated: true, rows: 3, when: can("subtitle") },
+        { type: "textarea", name: "body", label: "Основной текст", translated: true, rows: 5, when: can("body") },
       ],
     },
     {
       title: "Кнопки и ссылки",
+      when: (values) => can("primary")(values) || can("secondary")(values),
       fields: [
-        { type: "text", name: "primary_label", label: "Текст основной кнопки", translated: true, maxLength: 60 },
-        { type: "text", name: "primary_link", label: "Ссылка основной кнопки", maxLength: 255, help: "Путь без языка, например /tours или /contact." },
-        { type: "text", name: "secondary_label", label: "Текст второй кнопки", translated: true, maxLength: 60 },
-        { type: "text", name: "secondary_link", label: "Ссылка второй кнопки", maxLength: 255 },
+        { type: "text", name: "primary_label", label: "Текст основной кнопки", translated: true, maxLength: 60, when: can("primary") },
+        { type: "text", name: "primary_link", label: "Ссылка основной кнопки", maxLength: 255, help: "Путь без языка, например /tours или /contact.", when: can("primary") },
+        { type: "text", name: "secondary_label", label: "Текст второй кнопки", translated: true, maxLength: 60, when: can("secondary") },
+        { type: "text", name: "secondary_link", label: "Ссылка второй кнопки", maxLength: 255, when: can("secondary") },
       ],
     },
     {
       title: "Отображение",
+      description: (values) => capabilities(values).source,
       fields: [
         { type: "boolean", name: "is_visible", label: "Показывать блок" },
         { type: "boolean", name: "animate", label: "Анимация появления" },
-        { type: "number", name: "items_limit", label: "Количество карточек", min: 1, max: 24, help: "Для первого экрана — сколько цифр показывать в нижней панели. На компьютере они растягиваются на всю ширину, на телефоне видны первые три." },
-        { type: "image", name: "background", label: "Фоновое изображение", folder: "sections" },
-        { type: "video", name: "background_video", label: "Фоновое видео 4K (только первый экран)", folder: "sections", help: "MP4 H.264 3840×2160, 30 кадров/с, без звука, 15–20 секунд, до 50 МБ. Показывается на компьютерах с экраном от Full HD при быстром интернете. Пока видео загружается, виден постер — фоновое изображение." },
-        { type: "video", name: "background_video_light", label: "Облегчённое видео 1080p", folder: "sections", help: "Тот же ролик в 1920×1080 до 15 МБ. Его получают телефоны, планшеты, небольшие экраны и медленный интернет, а также компьютеры, которые не справляются с 4K без потери кадров. При режиме экономии трафика и «уменьшении движения» видео не загружается." },
+        { type: "number", name: "items_limit", label: "Количество карточек", min: 1, max: 24, help: "Для первого экрана — сколько цифр показывать в нижней панели. На компьютере они растягиваются на всю ширину, на телефоне видны первые три.", when: can("limit") },
+        { type: "image", name: "background", label: "Фоновое изображение", folder: "sections", help: "Для первого экрана это ещё и постер: он виден, пока загружается видео, поэтому лучше взять первый кадр ролика.", when: can("background") },
+        { type: "video", name: "background_video", label: "Основное видео (компьютеры)", folder: "sections", videoRole: "main", posterField: "background", help: "MP4 H.264 2560×1440, 30 кадров/с, без звука, 15–20 секунд, до 40 МБ, ключевой кадр каждую секунду. 1440p выглядит так же чётко, как 4K, но декодируется в разы легче — видео не подтормаживает. Показывается на компьютерах с экраном от Full HD при быстром интернете.", when: can("video") },
+        { type: "video", name: "background_video_light", label: "Облегчённое видео 1080p", folder: "sections", videoRole: "light", pairWith: "background_video", help: "Тот же ролик в 1920×1080, около 7 Мбит/с, до 20 МБ. Его получают телефоны, планшеты, небольшие экраны и медленный интернет, а также компьютеры, которые не справляются с основным видео без потери кадров. При режиме экономии трафика и «уменьшении движения» видео не загружается.", when: can("video") },
       ],
     },
     {
       title: "Элементы блока",
-      description: "Карточки культуры, преимущества, пункты «Природа и приключения» и цифры нижней панели первого экрана. Порядок меняется стрелками, лишнее можно скрыть или удалить.",
-      fields: [
-        {
-          type: "inline",
-          name: "items",
-          label: "Элементы",
-          itemLabel: "Элемент",
-          itemDefaults: { is_visible: true },
-          fields: [
-            { type: "text", name: "title", label: "Заголовок", translated: true, required: true, maxLength: 160 },
-            { type: "text", name: "label", label: "Подпись", translated: true, maxLength: 80 },
-            { type: "textarea", name: "text", label: "Текст", translated: true, rows: 2 },
-            { type: "select", name: "icon", label: "Иконка", allowEmpty: true, options: ICON_NAMES.map((name) => ({ value: name, label: name })) },
-            { type: "text", name: "value", label: "Число / значение", maxLength: 30, help: "Для цифр первого экрана: число со знаком «+» или «%», если нужно, — например 7439, 8000+, 90%+. Число анимируется при появлении." },
-            { type: "text", name: "link", label: "Ссылка", maxLength: 255 },
-            { type: "boolean", name: "is_visible", label: "Показывать" },
-            { type: "image", name: "image", label: "Изображение", folder: "sections" },
-          ],
-        },
-      ],
+      description: ITEMS_DESCRIPTION,
+      when: can("items"),
+      fields: [{ type: "inline", name: "items", label: "Элементы", itemLabel: "Элемент", itemDefaults: { is_visible: true }, fields: SECTION_ITEM_FIELDS }],
     },
   ],
 };

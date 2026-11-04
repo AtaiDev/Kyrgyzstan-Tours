@@ -86,7 +86,7 @@ HOME_SECTIONS = [
     {
         "key": "destinations",
         "primary_link": "/destinations",
-        "items_limit": 5,
+        "items_limit": 6,
         "tr": tr(
             section_text("Куда поехать", "Популярные направления", "От зелёной столицы до высокогорных джайлоо — места, с которых стоит начать знакомство со страной.", "", "Все направления"),
             section_text("Where to go", "Popular destinations", "From the green capital to high mountain pastures — the places to begin your acquaintance with the country.", "", "All destinations"),
@@ -152,7 +152,7 @@ HOME_SECTIONS = [
     {
         "key": "stories",
         "primary_link": "/blog",
-        "items_limit": 3,
+        "items_limit": 4,
         "tr": tr(
             section_text("Блог", "Истории и советы путешественникам", "Полезные статьи и впечатления о дорогах Кыргызстана.", "", "Читать блог"),
             section_text("Journal", "Stories and travel tips", "Useful articles and impressions from the roads of Kyrgyzstan.", "", "Read the journal"),

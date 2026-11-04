@@ -292,7 +292,7 @@ MEDIA = {
 }
 
 VIDEOS = {
-    "hero_video": ("sections", "hero-kyrgyzstan-2160.mp4", {
+    "hero_video": ("sections", "hero-kyrgyzstan-1440.mp4", {
         "ru": "Облака над скальными вершинами Тянь-Шаня, козероги на гребне и бирюзовое озеро Кель-Суу в каньоне",
         "en": "Clouds over the rocky peaks of the Tian Shan, ibex on a ridge and the turquoise Kel-Suu lake in its canyon",
         "ky": "Тянь-Шандын аскалуу чокуларынын үстүндөгү булуттар, кыркада тоо текелер жана капчыгайдагы көгүлтүр Көл-Суу",

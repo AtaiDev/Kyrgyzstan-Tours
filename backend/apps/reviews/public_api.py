@@ -6,6 +6,7 @@ from apps.core.languages import content_languages
 from apps.core.serializers import LocalizedModelSerializer
 from apps.core.translation import save_translations
 from apps.core.viewsets import PublicCreateView, PublicReadOnlyViewSet
+from apps.inquiries.notifications import notify_team
 from apps.media_library.public_api import PublicMediaSerializer, media_prefetch
 from apps.people.models import Guide
 from apps.tours.models import Tour
@@ -124,6 +125,23 @@ class ReviewSubmissionSerializer(serializers.ModelSerializer):
 
 class ReviewSubmissionView(PublicCreateView):
     serializer_class = ReviewSubmissionSerializer
+
+    def after_create(self, instance):
+        # Reviews wait for moderation, so tell the team right away instead of relying on someone checking the admin.
+        text = instance.translated_value("text", instance.original_language)
+        self.notified = notify_team(
+            f"New review awaiting moderation: {instance.author_name}, {instance.rating}/5",
+            [
+                f"Tour: {instance.tour.translated_value('title', 'en') if instance.tour else '—'}",
+                f"Guide: {instance.guide.translated_value('name', 'en') if instance.guide else '—'}",
+                f"Author: {instance.author_name} ({instance.author_country or '—'}), {instance.author_email}",
+                f"Rating: {'★' * instance.rating}{'☆' * (5 - instance.rating)}",
+                "",
+                text,
+                "",
+                f"Moderate: {self.request.build_absolute_uri(f'/admin/r/reviews/{instance.pk}')}",
+            ],
+        )
 
     def build_response(self, instance):
         return {"status": "pending_moderation", "id": instance.pk}

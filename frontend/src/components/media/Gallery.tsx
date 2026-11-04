@@ -6,8 +6,9 @@ import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/context";
 import type { Media } from "@/types/api";
 import { cn } from "@/utils/cn";
+import { HOVER_ZOOM } from "@/utils/motion";
 
-import { PhotoCredit, ResponsiveImage } from "./ResponsiveImage";
+import { ResponsiveImage } from "./ResponsiveImage";
 
 export function Lightbox({ images, index, onClose, onIndex }: { images: Media[]; index: number | null; onClose: () => void; onIndex: (index: number) => void }) {
   const { t } = useI18n();
@@ -84,7 +85,6 @@ export function Lightbox({ images, index, onClose, onIndex }: { images: Media[];
           </div>
           <div className="px-4 pb-6 text-center sm:px-6">
             <p className="text-sm text-milk-100">{current.caption || current.alt}</p>
-            <PhotoCredit media={current} className="mt-1 inline-block" />
           </div>
         </motion.div>
       ) : null}
@@ -121,8 +121,8 @@ export function GalleryGrid({ images, className }: { images: Media[]; className?
             aria-label={t("a11y.openImage", { index: position + 1 })}
             className={cn("group relative overflow-hidden rounded-2xl", tileClass(position, images.length))}
           >
-            <ResponsiveImage media={image} sizes="(min-width: 768px) 25vw, 50vw" className="h-full w-full transition duration-700 group-hover:scale-105" />
-            <span className="absolute inset-0 bg-night-950/0 transition group-hover:bg-night-950/20" />
+            <ResponsiveImage media={image} sizes="(min-width: 768px) 25vw, 50vw" className={cn(HOVER_ZOOM, "h-full w-full group-hover:scale-[1.04]")} />
+            <span className="absolute inset-0 bg-night-950/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
           </button>
         ))}
       </div>

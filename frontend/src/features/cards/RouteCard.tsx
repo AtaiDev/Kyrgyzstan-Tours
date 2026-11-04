@@ -1,4 +1,5 @@
 import { ArrowRight, Route as RouteIcon } from "lucide-react";
+import type { PointerEvent } from "react";
 import { Link } from "react-router";
 
 import { RouteSketch } from "@/features/map/RouteMap";
@@ -8,6 +9,16 @@ import { cn } from "@/utils/cn";
 
 import { DifficultyMeter } from "./DifficultyMeter";
 
+const SPOTLIGHT = "radial-gradient(420px circle at var(--spot-x, 50%) var(--spot-y, 0%), color-mix(in oklab, var(--color-sand-300) 16%, transparent), transparent 65%)";
+
+// Writes the cursor position straight to CSS variables: the spotlight follows without re-rendering React.
+function trackSpotlight(event: PointerEvent<HTMLElement>) {
+  const target = event.currentTarget;
+  const rect = target.getBoundingClientRect();
+  target.style.setProperty("--spot-x", `${event.clientX - rect.left}px`);
+  target.style.setProperty("--spot-y", `${event.clientY - rect.top}px`);
+}
+
 export function RouteCard({ route, className }: { route: RouteCardData; className?: string }) {
   const { t, path, plural, formatNumber } = useI18n();
   const start = route.path[0]?.title;
@@ -15,11 +26,13 @@ export function RouteCard({ route, className }: { route: RouteCardData; classNam
   return (
     <article
       className={cn(
-        "dark-surface group relative flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] border border-white/10 bg-night-800/80 p-6 text-milk-50 transition duration-500 hover:border-sand-400/40 hover:bg-night-800",
+        "dark-surface group relative isolate flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] border border-white/10 bg-night-800/80 p-6 text-milk-50 transition-colors duration-500 hover:border-sand-400/40",
         className,
       )}
+      onPointerMove={trackSpotlight}
     >
-      <div className="mb-5 rounded-2xl bg-night-950/40 p-3">
+      <span className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" style={{ background: SPOTLIGHT }} aria-hidden />
+      <div className="mb-5 rounded-2xl bg-night-950/40 p-3 transition-colors duration-500 group-hover:bg-night-950/60">
         <RouteSketch points={route.path} />
       </div>
       <p className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-sand-300 uppercase">
@@ -35,7 +48,7 @@ export function RouteCard({ route, className }: { route: RouteCardData; classNam
       {start && finish ? (
         <p className="mt-4 flex items-center gap-2 text-sm text-milk-100">
           <span>{start}</span>
-          <ArrowRight className="h-3.5 w-3.5 text-sand-300" aria-hidden />
+          <ArrowRight className="h-3.5 w-3.5 text-sand-300 transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-1" aria-hidden />
           <span>{finish}</span>
         </p>
       ) : null}

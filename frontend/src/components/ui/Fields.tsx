@@ -1,13 +1,15 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 import { useId } from "react";
 
+import { Select } from "@/components/ui/Select";
+import type { SelectOption } from "@/components/ui/Select";
 import { cn } from "@/utils/cn";
 
 type Tone = "light" | "dark";
 
 export const inputClasses = (tone: Tone = "light", invalid = false) =>
   cn(
-    "w-full rounded-xl border px-4 py-3 text-[0.95rem] transition outline-none",
+    "w-full rounded-xl border px-4 py-3 text-base transition outline-none sm:text-[0.95rem]",
     "focus:ring-2 focus:ring-offset-0",
     tone === "dark"
       ? "border-white/15 bg-white/5 text-milk-50 placeholder:text-milk-200/50 focus:border-sand-400 focus:ring-sand-400/30"
@@ -97,39 +99,40 @@ export function TextAreaField({ label, error, hint, optional, tone, wrapperClass
   );
 }
 
-interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
+interface SelectFieldProps {
   label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
   error?: string;
   hint?: string;
   optional?: string;
   tone?: Tone;
+  disabled?: boolean;
+  id?: string;
+  className?: string;
   wrapperClassName?: string;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
 }
 
-export function SelectField({ label, error, hint, optional, tone, wrapperClassName, className, id, options, placeholder, ...rest }: SelectFieldProps) {
+export function SelectField({ label, error, hint, optional, tone, wrapperClassName, className, id, ...rest }: SelectFieldProps) {
   const generated = useId();
   const fieldId = id ?? generated;
   return (
     <FieldShell id={fieldId} label={label} error={error} hint={hint} optional={optional} tone={tone} className={wrapperClassName}>
-      <select
+      <Select
         id={fieldId}
-        aria-invalid={Boolean(error)}
-        className={cn(inputClasses(tone, Boolean(error)), "appearance-none bg-[length:1rem] bg-[right_1rem_center] bg-no-repeat pr-10", className)}
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7380' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-        }}
+        tone={tone}
+        invalid={Boolean(error)}
+        aria-describedby={error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined}
+        className={cn(
+          inputClasses(tone, Boolean(error)),
+          "cursor-pointer",
+          tone === "dark" ? "hover:border-white/30 data-[open]:border-sand-400" : "hover:border-graphite-300 data-[open]:border-glacier-600",
+          className,
+        )}
         {...rest}
-      >
-        {placeholder !== undefined ? <option value="">{placeholder}</option> : null}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      />
     </FieldShell>
   );
 }

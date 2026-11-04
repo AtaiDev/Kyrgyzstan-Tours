@@ -1,11 +1,13 @@
 import os
 from pathlib import Path
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-load_dotenv(BASE_DIR / ".env")
+# DJANGO_ENV_FILE picks another file, e.g. .env.production to run one-off commands against the hosted database.
+load_dotenv(BASE_DIR / os.environ.get("DJANGO_ENV_FILE", ".env"))
 
 
 def env(name, default=None):
@@ -94,6 +96,25 @@ ASGI_APPLICATION = "config.asgi.application"
 
 
 def build_database_settings():
+    # A single connection URL, as hosted Postgres services (Neon, Render, Supabase) hand it out. Query parameters such
+    # as sslmode=require are passed to the driver unchanged.
+    url = env("DATABASE_URL", "")
+    if url:
+        parsed = urlsplit(url)
+        return {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": unquote(parsed.path.lstrip("/")),
+                "USER": unquote(parsed.username or ""),
+                "PASSWORD": unquote(parsed.password or ""),
+                "HOST": parsed.hostname or "",
+                "PORT": str(parsed.port or 5432),
+                "CONN_MAX_AGE": env_int("POSTGRES_CONN_MAX_AGE", 60),
+                # Serverless Postgres closes idle connections; check before reuse instead of failing the request.
+                "CONN_HEALTH_CHECKS": True,
+                "OPTIONS": dict(parse_qsl(parsed.query)),
+            }
+        }
     engine = env("DATABASE_ENGINE", "sqlite").strip().lower()
     if engine in {"postgres", "postgresql"}:
         return {
@@ -145,6 +166,30 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
+
+# Uploads go to Cloudflare R2 (S3-compatible) once a bucket is configured, so they survive hosts whose disk is wiped on
+# every restart; without it they stay in MEDIA_ROOT. Files are public and served straight from R2's public domain.
+R2_BUCKET = env("R2_BUCKET", "")
+R2_PUBLIC_DOMAIN = env("R2_PUBLIC_DOMAIN", "").removeprefix("https://").removeprefix("http://").rstrip("/")
+if R2_BUCKET:
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": R2_BUCKET,
+            "endpoint_url": env("R2_ENDPOINT_URL", f"https://{env('R2_ACCOUNT_ID', '')}.r2.cloudflarestorage.com"),
+            "access_key": env("R2_ACCESS_KEY_ID", ""),
+            "secret_key": env("R2_SECRET_ACCESS_KEY", ""),
+            "region_name": "auto",
+            "signature_version": "s3v4",
+            "custom_domain": R2_PUBLIC_DOMAIN,
+            "url_protocol": "https:",
+            "querystring_auth": False,
+            "default_acl": None,
+            "file_overwrite": False,
+            # Upload names are unique, so a cached copy never goes stale.
+            "object_parameters": {"CacheControl": "public, max-age=31536000, immutable"},
+        },
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

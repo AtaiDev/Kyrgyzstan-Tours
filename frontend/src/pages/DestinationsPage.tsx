@@ -69,7 +69,7 @@ export default function DestinationsPage() {
                 type="button"
                 role="tab"
                 aria-selected={view === tab}
-                onClick={() => setParams(updateSearch(new URLSearchParams(), { view: tab === "attractions" ? "attractions" : null }))}
+                onClick={() => setParams(updateSearch(new URLSearchParams(), { view: tab === "attractions" ? "attractions" : null }), { preventScrollReset: true })}
                 className={cn("rounded-full px-5 py-2.5 text-sm font-semibold transition", view === tab ? "bg-night-900 text-milk-50" : "text-graphite-600 hover:text-night-900")}
               >
                 {tab === "destinations" ? t("label.destinations") : t("label.attractions")}

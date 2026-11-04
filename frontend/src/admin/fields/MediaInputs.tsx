@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, ImagePlus, Images, Replace, Trash2, Upload, Video } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Camera, ImagePlus, Images, Replace, Trash2, Upload, Video } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -7,6 +7,7 @@ import { adminApi } from "../api";
 import type { MediaBrief } from "../types";
 import { useFeedback } from "../ui/feedback";
 import { MediaPicker, toBrief } from "./MediaPicker";
+import { captureFirstFrame, describeVideo, videoWarnings } from "./videoChecks";
 
 interface MediaInputProps {
   value: MediaBrief | null;
@@ -14,21 +15,45 @@ interface MediaInputProps {
   kind?: "image" | "video";
   folder?: string;
   id?: string;
+  videoRole?: "main" | "light";
+  /** For a light video: the main video it should be a smaller copy of. */
+  pair?: MediaBrief | null;
+  /** For a main video: stores a poster made from its first frame. */
+  onPoster?: (poster: MediaBrief, video: MediaBrief) => void;
 }
 
-export function MediaInput({ value, onChange, kind = "image", folder = "", id }: MediaInputProps) {
+export function MediaInput({ value, onChange, kind = "image", folder = "", id, videoRole, pair = null, onPoster }: MediaInputProps) {
   const [picking, setPicking] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [posterBusy, setPosterBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { notifyError, notify } = useFeedback();
+
+  const makePoster = async (video: MediaBrief) => {
+    if (!onPoster) return false;
+    setPosterBusy(true);
+    try {
+      const frame = await captureFirstFrame(video.url);
+      const name = `poster-${(video.original_name || "video").replace(/\.[^.]+$/, "")}.jpg`;
+      onPoster(toBrief(await adminApi.uploadMedia(new File([frame], name, { type: "image/jpeg" }), folder)), video);
+      return true;
+    } catch (error) {
+      notifyError(error, "Не удалось сделать постер из первого кадра");
+      return false;
+    } finally {
+      setPosterBusy(false);
+    }
+  };
 
   const upload = async (file: File | undefined) => {
     if (!file) return;
     setUploading(true);
     try {
-      const asset = await adminApi.uploadMedia(file, folder);
-      onChange(toBrief(asset));
-      notify("success", "Файл загружен", "Не забудьте сохранить запись.");
+      const brief = toBrief(await adminApi.uploadMedia(file, folder));
+      onChange(brief);
+      // A new main video needs a matching poster, otherwise the old picture flashes before the new clip starts.
+      const posterMade = brief.kind === "video" && onPoster ? await makePoster(brief) : false;
+      notify("success", posterMade ? "Видео загружено, постер обновлён" : "Файл загружен", posterMade ? "Постер — первый кадр нового видео. Не забудьте сохранить запись." : "Не забудьте сохранить запись.");
     } catch (error) {
       notifyError(error, "Не удалось загрузить файл");
     } finally {
@@ -65,7 +90,25 @@ export function MediaInput({ value, onChange, kind = "image", folder = "", id }:
             Убрать
           </Button>
         ) : null}
-        {value ? <p className="w-full text-xs text-graphite-500">{value.original_name || value.alt}{value.width ? ` · ${value.width}×${value.height}` : ""}</p> : null}
+        {value && value.kind === "video" && onPoster ? (
+          <Button size="sm" variant="outline" loading={posterBusy} icon={<Camera className="h-4 w-4" aria-hidden />} onClick={() => void makePoster(value).then((made) => made && notify("success", "Постер обновлён", "Сохраните запись."))}>
+            Постер из первого кадра
+          </Button>
+        ) : null}
+        {value ? (
+          <p className="w-full text-xs text-graphite-500">
+            {value.original_name || value.alt}
+            {value.kind === "video" && describeVideo(value) ? ` · ${describeVideo(value)}` : value.width ? ` · ${value.width}×${value.height}` : ""}
+          </p>
+        ) : null}
+        {value && value.kind === "video"
+          ? videoWarnings(value, videoRole, pair).map((warning) => (
+              <p key={warning} className="flex w-full items-start gap-2 rounded-lg bg-warning-100 px-3 py-2 text-xs leading-relaxed text-warning-700">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                {warning}
+              </p>
+            ))
+          : null}
       </div>
       <MediaPicker open={picking} onClose={() => setPicking(false)} onSelect={(assets) => onChange(assets[0] ?? null)} kind={kind} folder={folder} />
     </div>

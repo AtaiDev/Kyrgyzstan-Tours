@@ -67,7 +67,9 @@ export function PublicLayout() {
       </motion.main>
       <Footer />
       <PreviewBanner />
-      <ScrollRestoration getKey={(entry) => entry.pathname} />
+      {/* Positions are kept per history entry (the default key): a link always opens a page at the top, while Back and
+          Forward return to where the visitor was. Keying by pathname restored an old mid-page position on every visit. */}
+      <ScrollRestoration />
     </div>
   );
 }

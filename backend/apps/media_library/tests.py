@@ -88,3 +88,22 @@ class MediaUploadTests(AdminAPITestCase):
         small = MediaAsset.objects.get(pk=self.upload(client).json()["id"])
         self.assertFalse(small.large)
         self.assertEqual(small.large_url, small.url)
+
+
+class VideoUploadTests(AdminAPITestCase):
+    def test_video_upload_is_made_streamable_and_described(self):
+        from pathlib import Path
+
+        from apps.media_library.video import probe
+
+        source = (Path(__file__).parent / "test_media" / "tail-moov.mp4").read_bytes()
+        upload = SimpleUploadedFile("clip.mp4", source, content_type="video/mp4")
+        response = self.client_for(self.superuser).post("/api/admin/media/", {"file": upload, "folder": "sections"}, format="multipart")
+        self.assertEqual(response.status_code, 201, response.content)
+        data = response.json()
+        self.assertEqual((data["kind"], data["width"], data["height"], data["video_codec"]), ("video", 160, 90, "avc1"))
+        self.assertAlmostEqual(data["duration"], 0.5, places=1)
+        asset = MediaAsset.objects.get(pk=data["id"])
+        with asset.file.open("rb") as handle:
+            self.assertTrue(probe(handle).streamable, "moov must be moved in front of the media data")
+        self.assertEqual(asset.file_size, len(source))

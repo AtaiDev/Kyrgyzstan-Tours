@@ -20,6 +20,8 @@ interface FieldRendererProps {
   field: FieldConfig;
   values: FormValues;
   onChange: (values: FormValues) => void;
+  /** Functional update of the whole record, for changes that land after an await (they must not use stale values). */
+  onUpdate?: (update: (current: FormValues) => FormValues) => void;
   language: Language;
   errors: FormErrors;
   prefix?: string;
@@ -51,7 +53,9 @@ function MarkdownInput({ value, onChange, id, rows, invalid }: { value: string; 
   );
 }
 
-function InlineInput({ field, items, onChange, language, errors, prefix }: { field: Extract<FieldConfig, { type: "inline" }>; items: FormValues[]; onChange: (items: FormValues[]) => void; language: Language; errors: FormErrors; prefix: string }) {
+function InlineInput({ field, items, record, onChange, language, errors, prefix }: { field: Extract<FieldConfig, { type: "inline" }>; items: FormValues[]; record: FormValues; onChange: (items: FormValues[]) => void; language: Language; errors: FormErrors; prefix: string }) {
+  // Sub-field conditions read the record that owns the items (e.g. a section key), not the item itself.
+  const subFields = field.fields.filter((subField) => !subField.when || subField.when(record));
   const add = () => onChange([...items, initialValues([{ title: "", fields: field.fields }], field.itemDefaults)]);
   const move = (index: number, delta: number) => {
     const next = [...items];
@@ -84,7 +88,7 @@ function InlineInput({ field, items, onChange, language, errors, prefix }: { fie
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {field.fields.map((subField) => (
+              {subFields.map((subField) => (
                 <FieldRenderer
                   key={subField.name}
                   field={subField}
@@ -108,7 +112,7 @@ function InlineInput({ field, items, onChange, language, errors, prefix }: { fie
   );
 }
 
-export function FieldRenderer({ field, values, onChange, language, errors, prefix = "" }: FieldRendererProps) {
+export function FieldRenderer({ field, values, onChange, onUpdate, language, errors, prefix = "" }: FieldRendererProps) {
   const id = useId();
   const error = errorFor(errors, field, language, prefix);
   const invalid = Boolean(error);
@@ -167,13 +171,28 @@ export function FieldRenderer({ field, values, onChange, language, errors, prefi
       break;
     case "image":
     case "video":
-      control = <MediaInput id={id} kind={field.type} folder={field.folder} value={(raw as MediaBrief | null) ?? null} onChange={set} />;
+      control = (
+        <MediaInput
+          id={id}
+          kind={field.type}
+          folder={field.folder}
+          value={(raw as MediaBrief | null) ?? null}
+          onChange={set}
+          videoRole={field.videoRole}
+          pair={field.pairWith ? ((values[field.pairWith] as MediaBrief | null) ?? null) : null}
+          onPoster={
+            field.posterField && onUpdate
+              ? (poster, video) => onUpdate((current) => ({ ...current, [field.name]: video, [field.posterField as string]: poster }))
+              : undefined
+          }
+        />
+      );
       break;
     case "gallery":
       control = <GalleryInput folder={field.folder} value={Array.isArray(raw) ? (raw as MediaBrief[]) : []} onChange={set} />;
       break;
     case "inline":
-      control = <InlineInput field={field} items={Array.isArray(raw) ? (raw as FormValues[]) : []} onChange={set} language={language} errors={errors} prefix={prefix} />;
+      control = <InlineInput field={field} items={Array.isArray(raw) ? (raw as FormValues[]) : []} record={values} onChange={set} language={language} errors={errors} prefix={prefix} />;
       break;
     case "color":
       control = (

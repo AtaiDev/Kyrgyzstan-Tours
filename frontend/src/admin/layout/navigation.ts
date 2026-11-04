@@ -47,8 +47,8 @@ export const ADMIN_NAVIGATION: NavGroup[] = [
   {
     title: "Контент сайта",
     items: [
-      { to: "/admin/r/sections?page=home", label: "Главная страница", icon: Home, permission: "site_content.view_pagesection", match: "page=home" },
-      { to: "/admin/r/sections?page=about", label: "Страница «О нас»", icon: Info, permission: "site_content.view_pagesection", match: "page=about" },
+      { to: "/admin/r/sections?page_key=home", label: "Главная страница", icon: Home, permission: "site_content.view_pagesection", match: "page_key=home" },
+      { to: "/admin/r/sections?page_key=about", label: "Страница «О нас»", icon: Info, permission: "site_content.view_pagesection", match: "page_key=about" },
       { to: "/admin/r/regions", label: "Области Кыргызстана", icon: Map, permission: "geography.view_region" },
       { to: "/admin/r/attractions", label: "Достопримечательности", icon: Landmark, permission: "geography.view_attraction" },
       { to: "/admin/r/destinations", label: "Направления", icon: Compass, permission: "geography.view_destination" },

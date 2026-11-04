@@ -20,6 +20,24 @@ const FULL_QUALITY_DROP_LIMIT = 0.08;
 const LIGHT_QUALITY_DROP_LIMIT = 0.25;
 const QUALITY_WINDOW_MS = 2500;
 const SLOW_BUFFER_MS = 7000;
+const READY_GRACE_MS = 1500;
+const DOWNGRADE_KEY = "hero-video-downgraded";
+
+function readDowngraded() {
+  try {
+    return sessionStorage.getItem(DOWNGRADE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberDowngraded() {
+  try {
+    sessionStorage.setItem(DOWNGRADE_KEY, "1");
+  } catch {
+    // Storage can be unavailable (private mode); the downgrade still applies for this visit.
+  }
+}
 
 interface NetworkInformationLike {
   saveData?: boolean;
@@ -36,11 +54,21 @@ function usePageVisible() {
   return visible;
 }
 
+// Desktops on a decent connection always get the main video: the light file exists for phones, slow networks and
+// machines that drop frames, not as a cheaper default for ordinary screens.
 function prefersFullQuality(isDesktop: boolean) {
   const connection = (navigator as Navigator & { connection?: NetworkInformationLike }).connection;
   const slow = Boolean(connection?.saveData) || ["slow-2g", "2g", "3g"].includes(connection?.effectiveType ?? "");
-  const physicalWidth = window.screen.width * (window.devicePixelRatio || 1);
-  return isDesktop && !slow && physicalWidth >= 1800;
+  return isDesktop && !slow;
+}
+
+// The light file is a real fallback only when it is the same clip in a smaller size. A different clip, or one just as
+// large, would swap what the visitor sees or lower quality for nothing, so it is ignored in favour of the main video.
+function isLighterVersion(full: Media | null | undefined, light: Media | null | undefined) {
+  if (!full || !light || full.id === light.id) return false;
+  if (full.duration && light.duration && Math.abs(full.duration - light.duration) > 1) return false;
+  if (full.width && light.width) return light.width < full.width;
+  return true;
 }
 
 function rise(enabled: boolean, delay: number) {
@@ -134,21 +162,60 @@ interface BackgroundVideoProps {
 
 function BackgroundVideo({ video, play, dropLimit, onFallback, fallbackOnSlowBuffer }: BackgroundVideoProps) {
   const ref = useRef<HTMLVideoElement>(null);
-  const [buffered, setBuffered] = useState(false);
-  const [smooth, setSmooth] = useState(false);
-  const visible = buffered || smooth;
+  const [canPlay, setCanPlay] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [visible, setVisible] = useState(false);
 
+  // Hold on the first frame (it matches the poster) until enough is buffered, so playback starts clean from 0.
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
     element.muted = true;
     element.defaultMuted = true;
-    if (play) {
+    if (play && ready) {
       element.play().catch(() => undefined);
     } else {
       element.pause();
     }
-  }, [play]);
+  }, [play, ready]);
+
+  // Release the decoder and abort the download on unmount; otherwise the detached player lingers until GC and the
+  // next mount (returning to the page) stalls behind it on the hardware decoder and the HTTP cache lock.
+  useEffect(() => {
+    const element = ref.current;
+    return () => {
+      // StrictMode's simulated unmount keeps the node attached; only a real unmount detaches it first.
+      if (!element || element.isConnected) return;
+      element.pause();
+      element.removeAttribute("src");
+      element.load();
+    };
+  }, []);
+
+  // Router navigations render concurrently: a cached file can fire canplay/canplaythrough between element creation
+  // and commit, when React drops events. Read readyState after mount and listen natively so they are never missed.
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const sync = () => {
+      if (element.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) setReady(true);
+      else if (element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) setCanPlay(true);
+    };
+    sync();
+    element.addEventListener("canplay", sync);
+    element.addEventListener("canplaythrough", sync);
+    return () => {
+      element.removeEventListener("canplay", sync);
+      element.removeEventListener("canplaythrough", sync);
+    };
+  }, []);
+
+  // Some browsers never fire canplaythrough; start anyway once playback has been possible for a moment.
+  useEffect(() => {
+    if (!canPlay || ready) return;
+    const timer = window.setTimeout(() => setReady(true), READY_GRACE_MS);
+    return () => window.clearTimeout(timer);
+  }, [canPlay, ready]);
 
   useEffect(() => {
     if (!fallbackOnSlowBuffer || visible) return;
@@ -161,11 +228,17 @@ function BackgroundVideo({ video, play, dropLimit, onFallback, fallbackOnSlowBuf
     if (!element || !play || !visible || typeof element.getVideoPlaybackQuality !== "function") return;
     let previous = element.getVideoPlaybackQuality();
     let strikes = 0;
+    let warmup = true;
     const timer = window.setInterval(() => {
       const current = element.getVideoPlaybackQuality();
       const total = current.totalVideoFrames - previous.totalVideoFrames;
       const dropped = current.droppedVideoFrames - previous.droppedVideoFrames;
       previous = current;
+      // Ignore the first window: page-load work inflates dropped frames and would trigger a needless downgrade.
+      if (warmup) {
+        warmup = false;
+        return;
+      }
       if (total < 30) return;
       strikes = dropped / total > dropLimit ? strikes + 1 : 0;
       if (strikes >= 2) onFallback();
@@ -176,18 +249,19 @@ function BackgroundVideo({ video, play, dropLimit, onFallback, fallbackOnSlowBuf
   return (
     <video
       ref={ref}
-      className={cn("absolute inset-0 h-full w-full object-cover transition-opacity duration-[1400ms] ease-out", visible ? "opacity-100" : "opacity-0")}
+      className={cn("absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out", visible ? "opacity-100" : "opacity-0")}
       src={video.url}
       muted
       loop
-      autoPlay
       playsInline
       preload="auto"
       disablePictureInPicture
       disableRemotePlayback
-      onCanPlayThrough={() => setBuffered(true)}
-      onTimeUpdate={(event) => {
-        if (!smooth && event.currentTarget.currentTime > 1.5 && event.currentTarget.readyState >= 3) setSmooth(true);
+      onPlaying={(event) => {
+        if (visible) return;
+        const element = event.currentTarget;
+        if ("requestVideoFrameCallback" in element) element.requestVideoFrameCallback(() => setVisible(true));
+        else setVisible(true);
       }}
     />
   );
@@ -200,21 +274,26 @@ export function HeroSection({ section }: { section: PageSection }) {
   const { saveData, lowPower } = useDeviceCapabilities();
   const pageVisible = usePageVisible();
   const [viewRef, inView] = useInView<HTMLDivElement>();
-  const [downgraded, setDowngraded] = useState(false);
+  const [downgraded, setDowngraded] = useState(readDowngraded);
   const [videoFailed, setVideoFailed] = useState(false);
 
   const animate = !motionSettings.reduceMotion;
   const full = section.background_video;
   const light = section.background_video_light;
+  const lighter = isLighterVersion(full, light);
   const wantsFull = !downgraded && !lowPower && prefersFullQuality(isDesktop);
-  const video = (wantsFull ? full ?? light : light ?? full) ?? null;
+  const video = (lighter ? (wantsFull ? full : light) : (full ?? light)) ?? null;
   const showVideo = Boolean(video) && motionSettings.heroVideo && !saveData && !videoFailed;
   const playing = showVideo && pageVisible && inView;
   const poster = section.background;
   const strength = Math.min(0.35 + motionSettings.overlayOpacity * 0.7, 0.9);
   const stats = section.items.slice(0, section.items_limit || section.items.length);
-  const canDowngrade = Boolean(video && light && video.id !== light.id);
-  const fallback = useCallback(() => (canDowngrade ? setDowngraded(true) : setVideoFailed(true)), [canDowngrade]);
+  const canDowngrade = lighter && video?.id === full?.id;
+  const fallback = useCallback(() => {
+    if (!canDowngrade) return setVideoFailed(true);
+    rememberDowngraded();
+    setDowngraded(true);
+  }, [canDowngrade]);
 
   return (
     <section
@@ -269,19 +348,26 @@ export function HeroSection({ section }: { section: PageSection }) {
             {section.subtitle}
           </motion.p>
         ) : null}
-        <motion.div {...rise(animate, 0.9)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <motion.div {...rise(animate, 0.9)} className="mt-8 flex flex-wrap gap-2 sm:items-center sm:gap-4">
           {section.primary_label ? (
             <LinkButton
               to={path(section.primary_link || "/destinations")}
               variant="accent"
               size="lg"
+              className="flex-auto max-sm:gap-2 max-sm:px-3.5 max-sm:text-sm sm:flex-none"
               iconAfter={<ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden />}
             >
               {section.primary_label}
             </LinkButton>
           ) : null}
           {section.secondary_label ? (
-            <LinkButton to={path(section.secondary_link || "/guides")} variant="glass" size="lg" icon={<Compass className="h-4 w-4" aria-hidden />}>
+            <LinkButton
+              to={path(section.secondary_link || "/guides")}
+              variant="glass"
+              size="lg"
+              className="flex-auto max-sm:gap-2 max-sm:px-3.5 max-sm:text-sm sm:flex-none"
+              icon={<Compass className="h-4 w-4" aria-hidden />}
+            >
               {section.secondary_label}
             </LinkButton>
           ) : null}

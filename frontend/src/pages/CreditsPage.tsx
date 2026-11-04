@@ -1,7 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import { useState } from "react";
 
-import { useCredits, useSite } from "@/api/queries";
+import { useCredits, useScenes, useSite } from "@/api/queries";
 import { PageHero } from "@/components/layout/PageHero";
 import { Pagination } from "@/components/ui/Pagination";
 import { CardSkeletonGrid, ErrorState } from "@/components/ui/States";
@@ -24,6 +24,9 @@ export default function CreditsPage() {
   const [page, setPage] = useState(1);
   const { data: site } = useSite();
   const { data, isLoading, isError, refetch } = useCredits(page);
+  const { data: scenes = [] } = useScenes();
+  // The 3D scenes no longer carry an on-image credit, so the Copernicus attribution its licence requires lives here.
+  const terrainYears = [...new Set(scenes.map((scene) => scene.terrain?.captured_on?.slice(0, 4)).filter(Boolean))].sort().join(", ");
   useSeo({ pageKey: "credits", title: t("page.creditsTitle") });
 
   return (
@@ -31,7 +34,10 @@ export default function CreditsPage() {
       <PageHero title={t("page.creditsTitle")} subtitle={t("page.creditsSubtitle")} image={site?.default_og_image} crumbs={[{ label: t("footer.credits") }]} />
       <section className="bg-milk-100 py-16 sm:py-20">
         <div className="container-page">
-          <p className="mb-10 max-w-3xl text-sm text-graphite-600">{t("map.attribution")}</p>
+          <div className="mb-10 max-w-3xl space-y-2 text-sm text-graphite-600">
+            <p>{t("map.attribution")}</p>
+            {terrainYears ? <p>{t("journey.dataCredit", { year: terrainYears })}</p> : null}
+          </div>
           {isLoading ? (
             <CardSkeletonGrid count={8} className="lg:grid-cols-4" />
           ) : isError || !data ? (

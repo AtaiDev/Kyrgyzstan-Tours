@@ -1,12 +1,19 @@
+import warnings
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *
-from .base import STORAGES, env, env_bool, env_int
+from .base import R2_BUCKET, R2_PUBLIC_DOMAIN, STORAGES, env, env_bool, env_int
 
 DEBUG = False
 
 if not SECRET_KEY or SECRET_KEY.startswith(("development-only", "replace-with")) or len(SECRET_KEY) < 40:
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set to a strong unique value (40+ characters) in production.")
+
+if R2_BUCKET and not R2_PUBLIC_DOMAIN:
+    raise ImproperlyConfigured("R2_PUBLIC_DOMAIN must be set (e.g. pub-xxxx.r2.dev): uploaded media is served from it.")
+if env("DATABASE_URL") and not R2_BUCKET:
+    warnings.warn("DATABASE_URL is set but R2_BUCKET is not: uploads stay on the local disk and vanish on restart.", stacklevel=1)
 
 STORAGES = {
     **STORAGES,

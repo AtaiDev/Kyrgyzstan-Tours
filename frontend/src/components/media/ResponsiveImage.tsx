@@ -41,25 +41,11 @@ export function ResponsiveImage({ media, sizes = "100vw", priority, className, a
       decoding={priority ? "sync" : "async"}
       fetchPriority={priority ? "high" : undefined}
       onLoad={() => setLoaded(true)}
-      className={cn("object-cover transition-opacity duration-700", loaded || priority ? "opacity-100" : "opacity-0", className)}
+      // The load fade is a keyframe animation, not a transition: `cn` doesn't merge classes, so a base
+      // `transition-opacity` would override callers' `transition` and silently kill their hover zoom.
+      className={cn("object-cover", priority ? undefined : loaded ? "animate-image-in" : "opacity-0", className)}
       {...rest}
     />
   );
 }
 
-export function PhotoCredit({ media, className }: { media: Media | null | undefined; className?: string }) {
-  if (!media?.author) return null;
-  const label = `© ${media.author}${media.license ? ` · ${media.license}` : ""}`;
-  return media.source_url ? (
-    <a
-      href={media.source_url}
-      target="_blank"
-      rel="noreferrer noopener"
-      className={cn("text-[0.68rem] tracking-wide text-white/70 hover:text-white", className)}
-    >
-      {label}
-    </a>
-  ) : (
-    <span className={cn("text-[0.68rem] tracking-wide text-white/70", className)}>{label}</span>
-  );
-}

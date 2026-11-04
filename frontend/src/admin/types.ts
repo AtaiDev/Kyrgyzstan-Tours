@@ -20,6 +20,10 @@ export interface MediaBrief {
   thumbnail_url: string;
   width: number | null;
   height: number | null;
+  /** Videos only: seconds, container codec (avc1, hvc1…) and size in bytes, read on upload. */
+  duration?: number | null;
+  video_codec?: string;
+  file_size?: number;
   original_name: string;
   alt: string;
 }
