@@ -66,6 +66,7 @@ class SiteView(PublicAPIView):
                 "default_og_image": serialize_media(site.default_og_image, context),
                 "default_language": site.default_language,
                 **site.translated(language),
+                "contact_widget_enabled": site.contact_widget_enabled,
                 "contacts": {
                     "email": site.email,
                     "phone": site.phone,

@@ -83,6 +83,9 @@ export interface SiteData {
   address: string;
   working_hours: string;
   copyright: string;
+  contact_widget_enabled: boolean;
+  contact_cta?: string;
+  contact_intro?: string;
   contacts: SiteContacts;
   visual: VisualSettings;
   seo: Record<string, SeoEntry>;
@@ -508,6 +511,8 @@ export interface TourFacets {
 export interface BookingPayload {
   tour?: string | null;
   guide?: string | null;
+  destination?: string | null;
+  budget?: string;
   full_name: string;
   email: string;
   phone: string;

@@ -26,6 +26,7 @@ const TABS: Array<{ key: Tab; label: string; model: string; endpoint: string; st
 
 const CONTACT_LABELS: Record<string, string> = { email: "Email", phone: "Звонок", whatsapp: "WhatsApp", telegram: "Telegram" };
 const LANGUAGE_LABELS: Record<string, string> = { ru: "RU", en: "EN", ky: "KG" };
+const BUDGET_LABELS: Record<string, string> = { under_300: "до $300", "300_700": "$300–700", "700_1500": "$700–1500", over_1500: "от $1500", flexible: "Подобрать по ситуации" };
 
 function formatDate(value: unknown, withTime = true) {
   if (!value) return "—";
@@ -94,7 +95,9 @@ function InquiryDetail({ tab, record, onClose }: { tab: (typeof TABS)[number]; r
   const rows: Array<[string, unknown]> =
     tab.key === "bookings"
       ? [
+          ["Направление", record.destination_name ?? "Не выбрано"],
           ["Экскурсия", record.tour_title ?? "Не выбрана"],
+          ["Бюджет на человека", BUDGET_LABELS[String(record.budget)] ?? "Не указан"],
           ["Гид", record.guide_name ?? "—"],
           ["Дата поездки", record.travel_date ? formatDate(record.travel_date, false) : "Не указана"],
           ["Путешественников", record.travelers],

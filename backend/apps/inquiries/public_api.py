@@ -3,6 +3,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 
 from apps.core.viewsets import PublicCreateView
+from apps.geography.models import Destination
 from apps.people.models import Guide
 from apps.tours.models import Tour
 
@@ -23,6 +24,9 @@ class BookingRequestSerializer(serializers.ModelSerializer):
     guide = serializers.SlugRelatedField(
         slug_field="slug", queryset=Guide.objects.filter(is_published=True), required=False, allow_null=True
     )
+    destination = serializers.SlugRelatedField(
+        slug_field="slug", queryset=Destination.objects.filter(is_published=True), required=False, allow_null=True
+    )
     consent = serializers.BooleanField(validators=[require_consent])
 
     class Meta:
@@ -34,6 +38,8 @@ class BookingRequestSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "preferred_contact",
+            "destination",
+            "budget",
             "travel_date",
             "travelers",
             "message",
@@ -51,6 +57,8 @@ class BookingRequestSerializer(serializers.ModelSerializer):
         attrs = super().validate(attrs)
         if attrs.get("preferred_contact") in ("phone", "whatsapp", "telegram") and not attrs.get("phone"):
             raise serializers.ValidationError({"phone": ["Provide a phone number for the selected contact method."]})
+        if attrs.get("preferred_contact", "email") == "email" and not attrs.get("email"):
+            raise serializers.ValidationError({"email": ["Provide an email address."]})
         return attrs
 
 
@@ -63,6 +71,8 @@ class BookingRequestView(PublicCreateView):
             f"New booking request from {instance.full_name}",
             [
                 f"Tour: {tour}",
+                f"Destination: {instance.destination.translated_value('name', 'en') if instance.destination else '—'}",
+                f"Budget: {instance.get_budget_display() if instance.budget else '—'}",
                 f"Name: {instance.full_name}",
                 f"Email: {instance.email}",
                 f"Phone: {instance.phone or '—'}",

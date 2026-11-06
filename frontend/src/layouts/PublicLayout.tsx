@@ -5,6 +5,7 @@ import { Outlet, ScrollRestoration, useLocation, useNavigation } from "react-rou
 
 import { usePreviewFlag } from "@/api/queries";
 import { PageLoader } from "@/components/ui/States";
+import { ContactWidget } from "@/features/contact/ContactWidget";
 import { useI18n } from "@/i18n/context";
 
 import { Footer } from "./Footer";
@@ -66,6 +67,7 @@ export function PublicLayout() {
         </Suspense>
       </motion.main>
       <Footer />
+      <ContactWidget />
       <PreviewBanner />
       {/* Positions are kept per history entry (the default key): a link always opens a page at the top, while Back and
           Forward return to where the visitor was. Keying by pathname restored an old mid-page position on every visit. */}

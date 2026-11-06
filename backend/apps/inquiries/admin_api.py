@@ -8,6 +8,7 @@ from .models import BookingRequest, ContactMessage, NewsletterSubscriber
 class BookingRequestAdminSerializer(serializers.ModelSerializer):
     tour_title = serializers.SerializerMethodField()
     guide_name = serializers.SerializerMethodField()
+    destination_name = serializers.SerializerMethodField()
     handled_by_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -23,6 +24,9 @@ class BookingRequestAdminSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "preferred_contact",
+            "destination",
+            "destination_name",
+            "budget",
             "travel_date",
             "travelers",
             "message",
@@ -42,6 +46,8 @@ class BookingRequestAdminSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "preferred_contact",
+            "destination",
+            "budget",
             "travel_date",
             "travelers",
             "message",
@@ -55,6 +61,9 @@ class BookingRequestAdminSerializer(serializers.ModelSerializer):
 
     def get_tour_title(self, instance) -> str | None:
         return instance.tour.translated_value("title") if instance.tour else None
+
+    def get_destination_name(self, instance) -> str | None:
+        return instance.destination.translated_value("name") if instance.destination else None
 
     def get_guide_name(self, instance) -> str | None:
         return instance.guide.translated_value("name") if instance.guide else None
@@ -71,7 +80,7 @@ class BookingRequestAdminSerializer(serializers.ModelSerializer):
 
 
 class BookingRequestAdminViewSet(AdminModelViewSet):
-    queryset = BookingRequest.objects.select_related("tour", "guide", "handled_by").prefetch_related(
+    queryset = BookingRequest.objects.select_related("tour", "guide", "destination", "handled_by").prefetch_related(
         "tour__translations", "guide__translations"
     )
     serializer_class = BookingRequestAdminSerializer

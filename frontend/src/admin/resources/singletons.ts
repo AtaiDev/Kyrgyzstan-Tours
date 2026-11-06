@@ -54,6 +54,15 @@ export const contactsSingleton: SingletonConfig = {
       ],
     },
     {
+      title: "Кнопка «Связаться»",
+      description: "Плавающая кнопка в правом нижнем углу всех страниц сайта. По нажатию открывается окно: быстрые ссылки на мессенджеры из блока «Связь» и короткая заявка — направление, экскурсия, даты, бюджет и способ связи. Заявки приходят в «Заявки клиентов».",
+      fields: [
+        { type: "boolean", name: "contact_widget_enabled", label: "Показывать кнопку", span: 2 },
+        { type: "text", name: "contact_cta", label: "Текст на кнопке", translated: true, maxLength: 40, help: "Пусто — «Связаться»." },
+        { type: "text", name: "contact_intro", label: "Подзаголовок окна", translated: true, maxLength: 255, help: "Пусто — «Расскажите, что вам интересно, — подберём тур и ответим в течение рабочего дня»." },
+      ],
+    },
+    {
       title: "Социальные сети",
       fields: [
         { type: "url", name: "instagram_url", label: "Instagram", maxLength: 200 },

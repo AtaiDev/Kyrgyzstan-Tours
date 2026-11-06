@@ -36,6 +36,7 @@ class SiteSettings(SingletonModel, TranslatableModel):
     youtube_url = models.URLField(blank=True)
     office_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     office_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    contact_widget_enabled = models.BooleanField(default=True, db_default=True)
 
     translations = TranslatedFields(
         tagline=models.CharField(max_length=200, blank=True),
@@ -43,6 +44,8 @@ class SiteSettings(SingletonModel, TranslatableModel):
         address=models.CharField(max_length=255, blank=True),
         working_hours=models.CharField(max_length=160, blank=True),
         copyright=models.CharField(max_length=200, blank=True),
+        contact_cta=models.CharField(max_length=40, blank=True),
+        contact_intro=models.CharField(max_length=255, blank=True),
     )
     display_field = "tagline"
 

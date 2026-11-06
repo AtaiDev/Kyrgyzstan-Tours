@@ -14,6 +14,13 @@ class ContactMethod(models.TextChoices):
 
 
 class BookingRequest(TimeStampedModel):
+    class Budget(models.TextChoices):
+        UNDER_300 = "under_300", "до $300"
+        FROM_300 = "300_700", "$300–700"
+        FROM_700 = "700_1500", "$700–1500"
+        OVER_1500 = "over_1500", "от $1500"
+        FLEXIBLE = "flexible", "Подберите сами"
+
     class Status(models.TextChoices):
         NEW = "new", "New"
         IN_PROGRESS = "in_progress", "In progress"
@@ -29,9 +36,15 @@ class BookingRequest(TimeStampedModel):
         "people.Guide", null=True, blank=True, on_delete=models.SET_NULL, related_name="booking_requests"
     )
     full_name = models.CharField(max_length=150)
-    email = models.EmailField()
+    # Optional when the visitor asked to be contacted by phone or a messenger: requiring it loses those leads.
+    email = models.EmailField(blank=True, db_default="")
     phone = models.CharField(max_length=40, blank=True)
     preferred_contact = models.CharField(max_length=20, choices=ContactMethod.choices, default=ContactMethod.EMAIL)
+    # Lead details from the "Связаться" widget: what the visitor wants and roughly how much they plan to spend.
+    destination = models.ForeignKey(
+        "geography.Destination", null=True, blank=True, on_delete=models.SET_NULL, related_name="booking_requests"
+    )
+    budget = models.CharField(max_length=20, choices=Budget.choices, blank=True, db_default="")
     travel_date = models.DateField(null=True, blank=True)
     travelers = models.PositiveSmallIntegerField(default=2, validators=[MinValueValidator(1), MaxValueValidator(60)])
     message = models.TextField(blank=True)
